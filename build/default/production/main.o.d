@@ -5,4 +5,5 @@ timer.h  \
 config.h  \
  interrupt.h  \
 switch.h  \
-keypad.h 
+keypad.h  \
+adc.h 

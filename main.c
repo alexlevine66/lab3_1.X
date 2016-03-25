@@ -15,6 +15,8 @@
 #include "interrupt.h"
 #include "switch.h"
 #include "keypad.h"
+#include "adc.h"
+
 
 #define CLR 0x01
 
@@ -48,7 +50,8 @@ typedef enum RS_enum {
 volatile int q = 0;
 volatile int d = 0;
 volatile int line = 1;
-volatile unsigned int val = 0;
+volatile unsigned int val;
+volatile unsigned int digitalValue = 0;
 volatile char k = -1;
 volatile int x = 0;
 volatile char password[5] = {' ', ' ', ' ', ' ', '\0'};
@@ -69,45 +72,42 @@ int main(void)
     SYSTEMConfigPerformance(10000000);
     STP = 0;
     RUN = 0;
-
+    int i;
+    
     LATDbits.LATD0 = 1;
     initTimer2();
     initLCD();
     initADC();
-    initPWM();
     delayMs(1000);
     LATDbits.LATD0 = 0;
-    
-     TRISDbits.TRISD0 = 0;
-    
-    initKeypad();
 
+    TRISDbits.TRISD0 = 0;
+    
     writeCMD(CLR);
-    
-    
+    //clearLCD();
     moveCursorLCD(0,2);
+    testLCD();
     
     
-            
+    //delayMs(1000);
+    printStringLCD("In Loop");        
     while(1)
     {       
-        
-       
-        switch(state){
-            case wait:
-                
+        if(IFS0bits.AD1IF == 1)
+        {
+            IFS0bits.AD1IF = 0;
+            val = ADC1BUF0;
+            //printStringLCD("Flag popped");
         }
+        for(i = 0; i < (int) (1000*val)/1023; i++) delayUs(10);
+        LATDbits.LATD0 = 1;
+        for(i = 0; i < (int) (1000*(1023 - val))/1023; i++) delayUs(10);
+        LATDbits.LATD0 = 0;
     }
+    return 0;
 }
 
-void __ISR(_CHANGE_NOTICE_VECTOR, IPL7SRS) _CNInterrupt( void ){
-    IFS0bits.AD1IF = 0;    //Reset change notification flag
-    
-    if(){
-        
-        state = next;
-    }
-    
-    val = ADC1BUF0;
-    
-}
+//void __ISR(_ADC_VECTOR, IPL7AUTO) _ADCInterrupt(void){
+  //  IFS0bits.AD1IF = 0;
+    //val = ADC1BUF1;
+//}
