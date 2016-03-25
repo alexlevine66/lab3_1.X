@@ -16,6 +16,7 @@
 #include "switch.h"
 #include "keypad.h"
 #include "adc.h"
+#include <stdlib.h>
 
 
 #define CLR 0x01
@@ -72,6 +73,7 @@ int main(void)
     SYSTEMConfigPerformance(10000000);
     STP = 0;
     RUN = 0;
+    double analog=0;
     int i;
     
     LATDbits.LATD0 = 1;
@@ -80,34 +82,46 @@ int main(void)
     initADC();
     delayMs(1000);
     LATDbits.LATD0 = 0;
-
+    val=0;
     TRISDbits.TRISD0 = 0;
-    
+    int radix=10;
     writeCMD(CLR);
     //clearLCD();
     moveCursorLCD(0,2);
     testLCD();
-    
+    char buf[5];
+    const char* string;
+    //string="00000";
     
     //delayMs(1000);
-    printStringLCD("In Loop");        
+    //printStringLCD("In Loop");        
     while(1)
     {       
+        clearLCD();
         if(IFS0bits.AD1IF == 1)
         {
             IFS0bits.AD1IF = 0;
-            val = ADC1BUF0;
-            //printStringLCD("Flag popped");
+            val=ADC1BUF0;
+            printStringLCD("Voltage= ");
+           // delayMs(500);
+            analog=(3.3*val)/1023;
+            //itoa(buf,analog,radix);
+            sprintf(buf, "%1.1f", analog);
+            string=buf;
+            printStringLCD(string);
+            val=0;
+            delayMs(100);
         }
-        for(i = 0; i < (int) (1000*val)/1023; i++) delayUs(10);
+        
+        for(i = 0; i < (int) (1000*val)/1023; i++) delayUs(100);
         LATDbits.LATD0 = 1;
-        for(i = 0; i < (int) (1000*(1023 - val))/1023; i++) delayUs(10);
+        for(i = 0; i < (int) (1000*(1023 - val))/1023; i++) delayUs(100);
         LATDbits.LATD0 = 0;
     }
     return 0;
 }
 
-//void __ISR(_ADC_VECTOR, IPL7AUTO) _ADCInterrupt(void){
+//void __ISR(_ADC_VECTOR, IPL7AUTO) _ADCInterrupt(){
   //  IFS0bits.AD1IF = 0;
-    //val = ADC1BUF1;
+  //  val = ADC1BUF0;
 //}
